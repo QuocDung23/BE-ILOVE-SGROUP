@@ -4,6 +4,10 @@ export class UserRepository {
   async create(dto) {
     const { name, email, password } = dto;
 
+    if (!name || !email || !password) {
+      console.log(name,  email, password);
+      throw new Error('Name, email, and password are required.');
+    }
     const result = await UserModel.create({
       name,
       email,
@@ -31,6 +35,16 @@ export class UserRepository {
       name: String(user.name),
       email: String(user.email),
     };
+  }
+
+  async findByUsername(username) {
+    try {
+      const user = await UserModel.findOne({ username }); // Sử dụng findOne thay vì find
+      return user; // Trả về người dùng tìm được
+    } catch (err) {
+      console.error('Error finding user by username:', err);
+      throw new Error('Error finding user');
+    }
   }
 
   async getAll() {
