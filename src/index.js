@@ -3,9 +3,13 @@ import fs from 'fs';
 import connectDB from './databases/database.connection.js';
 import routers from './apis/index.js';
 import errorHandler from './middlewares/error.middleware.js';
+import dotenv from 'dotenv';
+
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+dotenv.config();
 
 // Middleware
 app.use(express.json());

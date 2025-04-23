@@ -39,7 +39,7 @@ export class UserRepository {
 
   async findByUsername(username) {
     try {
-      const user = await UserModel.findOne({ username }); // Sử dụng findOne thay vì find
+      const user = await UserModel.findOne({name: username }); // Sử dụng findOne thay vì find
       return user; // Trả về người dùng tìm được
     } catch (err) {
       console.error('Error finding user by username:', err);

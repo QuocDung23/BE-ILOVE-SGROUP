@@ -1,6 +1,7 @@
 import { UserRepository } from '../../repositories/users.repository.js'
 import bcrypt from 'bcryptjs';
-// import jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+
 
 const userRepo = new UserRepository();
 
@@ -28,21 +29,23 @@ class AuthService {
     };
   }
 
-    async example(username, password) {
-        try {
-          const newUser = await userRepo.create({
-            name: username,
-            password: password
-          });
-          
-          console.log('Created user:', newUser);
-          
-          const allUsers = await userRepo.getAll();
-          console.log('All users:', allUsers);
-        } catch (error) {
-          console.error('Error:', error.message);
-        }
-      }
+  async example(name, password) {
+    const user = await userRepo.findByUsername( name );
+    console.log(user);
+    
+
+    if (!user) throw new Error("Không tìm thấy người dùng");
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) throw new Error("Mật khẩu không đúng");
+    console.log('SECRET_KEY:', process.env.SECRET_KEY);
+    const token = jwt.sign(
+      { id: user._id, name: user.name },
+      process.env.SECRET_KEY, 
+      { expiresIn: "1d" }
+    );
+    return { user, token }; 
+  }
 }
 
 
