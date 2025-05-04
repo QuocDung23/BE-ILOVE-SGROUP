@@ -46,6 +46,28 @@ export class UserRepository {
       throw new Error('Error finding user');
     }
   }
+  async findByMail(email) {
+    try {
+      const user = await UserModel.findOne({email})
+      return user
+    } catch (err) {
+      console.error('Error finding email', err);
+      throw new Error('Error finding email')
+    }
+  }
+
+  async getTokenResetPass(query) {
+    try {
+      const user = await UserModel.findOne(query);
+      if (!user) {
+        throw new Error('Không tìm thấy token đặt lại mật khẩu');
+      }
+      return user;
+    } catch (err) {
+      console.error('Lỗi tìm kiếm token:', err);
+      throw new Error('Lỗi tìm kiếm token: ' + err.message);
+    }
+  }
 
   async getAll() {
     const users = await UserModel.find();

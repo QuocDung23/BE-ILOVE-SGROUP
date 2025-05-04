@@ -3,6 +3,8 @@ import AuthController from './auth.controller.js';
 
 const authRoute = express.Router();
 
-authRoute.post('/example', AuthController.example);
+authRoute.post('/login', AuthController.login);
 authRoute.post('/register', AuthController.register)
+authRoute.post('/forgotPass', AuthController.forgotPass)
+authRoute.patch('/resetPass/:token', AuthController.resetPass)
 export default authRoute;
