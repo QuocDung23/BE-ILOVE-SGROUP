@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import UserModel from "../models/users.model.js";
 
 function createResetPassToken() {
   const createToken = crypto.randomBytes(32).toString("hex");

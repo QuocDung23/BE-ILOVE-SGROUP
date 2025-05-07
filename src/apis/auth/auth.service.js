@@ -4,7 +4,10 @@ import { signJwt } from '../../service/jwt.sign.js'
 import { createResetPassToken } from "../../service/resetToken.js";
 import { mailService } from '../../service/mail.service.js';
 import crypto from "crypto";
-
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
+import dotenv from "dotenv";
 
 
 const userRepo = new UserRepository();
@@ -95,6 +98,128 @@ class AuthService {
     await user.save()
 
     return {message: "đổi mật khẩu thành công"}
+  }
+
+  constructor() {
+    dotenv.config();
+  }
+
+  async uploadImages(username, inputPath) {
+    try {
+      // Cấu hình Cloudinary
+      cloudinary.config({
+        cloud_name: process.env.CLOUD_NAME,
+        api_key: process.env.API_KEY,
+        api_secret: process.env.API_SECRET,
+      });
+
+      console.log("Cloudinary Config:", cloudinary.config());
+
+      // Kiểm tra user tồn tại
+      const userCheck = await userRepo.findByUsername(username);
+      if (!userCheck) {
+        throw new Error(`Không tìm thấy user: ${username}`);
+      }
+
+      const uploaded = [];
+
+      // Kiểm tra inputPath là URL hay đường dẫn thư mục
+      const isUrl = inputPath.startsWith('http://') || inputPath.startsWith('https://');
+
+      if (isUrl) {
+        // Xử lý upload từ URL
+        console.log(`📤 Đang upload từ URL: ${inputPath} ...`);
+
+        const uploadResult = await cloudinary.uploader.upload(inputPath, {
+          folder: "uploaded_images",
+          resource_type: "image",
+        });
+
+        console.log(`✅ Upload thành công từ URL`);
+        console.log("🔗 URL:", uploadResult.secure_url);
+
+        // Cập nhật URL vào DB
+        const user = await userRepo.updateUserByUsername(username, {
+          $push: { linkImages: uploadResult.secure_url },
+        });
+
+        if (user) {
+          console.log(`✅ Lưu URL vào DB thành công cho user: ${username}`);
+          uploaded.push(uploadResult.secure_url);
+        } else {
+          console.log(`⚠️ Lưu URL thất bại cho user: ${username}`);
+        }
+      } else {
+        // Xử lý upload từ thư mục cục bộ
+        if (!fs.existsSync(inputPath)) {
+          throw new Error(`Thư mục ${inputPath} không tồn tại`);
+        }
+
+        const files = fs
+          .readdirSync(inputPath)
+          .filter(
+            (file) =>
+              file.endsWith(".jpg") ||
+              file.endsWith(".png") ||
+              file.endsWith(".jpeg")
+          );
+
+        console.log(`🔍 Tìm thấy ${files.length} ảnh trong thư mục.`);
+
+        if (files.length === 0) {
+          return {
+            success: false,
+            message: "Không tìm thấy ảnh nào trong thư mục",
+            images: [],
+          };
+        }
+
+        for (const file of files) {
+          const filePath = path.join(inputPath, file);
+          console.log(`📤 Đang upload: ${file} ...`);
+
+          try {
+            const uploadResult = await cloudinary.uploader.upload(filePath, {
+              folder: "uploaded_images",
+              resource_type: "image",
+            });
+
+            console.log(`✅ Upload thành công: ${file}`);
+            console.log("🔗 URL:", uploadResult.secure_url);
+
+            const user = await userRepo.updateUserByUsername(username, {
+              $push: { linkImages: uploadResult.secure_url },
+            });
+
+            if (user) {
+              console.log(`✅ Lưu URL vào DB thành công cho user: ${username}`);
+              uploaded.push(uploadResult.secure_url);
+            } else {
+              console.log(`⚠️ Lưu URL thất bại cho user: ${username}`);
+            }
+          } catch (uploadError) {
+            console.error(`❌ Lỗi khi upload ${file}:`, uploadError);
+          }
+        }
+      }
+
+      console.log("🎉 Hoàn tất upload tất cả ảnh!");
+
+      return {
+        success: uploaded.length > 0,
+        message: uploaded.length > 0 
+          ? `Đã upload ${uploaded.length} ảnh thành công` 
+          : "Không có ảnh nào được upload thành công",
+        images: uploaded,
+      };
+    } catch (error) {
+      console.error("❌ Lỗi:", error.message);
+      return {
+        success: false,
+        message: `Lỗi khi upload ảnh: ${error.message}`,
+        images: [],
+      };
+    }
   }
 }
 

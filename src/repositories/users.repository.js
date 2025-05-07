@@ -69,6 +69,14 @@ export class UserRepository {
     }
   }
 
+  async updateUserByUsername(username, updateData) {
+    return await UserModel.findOneAndUpdate(
+      { name: username },
+      updateData,
+      { new: true }
+    );
+  }
+
   async getAll() {
     const users = await UserModel.find();
     if (!users) throw new Error('Not found user');

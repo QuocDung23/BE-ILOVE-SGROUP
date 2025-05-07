@@ -91,26 +91,6 @@ class AuthController {
    try {
     const {newPassword} = req.body;
     const {token} = req.params;
-    //   if (!newPassword) {
-    //     return res.status(400).json({
-    //       success: false,
-    //       message: 'Vui lòng nhập mật khẩu mới'
-    //     })
-    //   }
-
-    // const hashToken = crypto.createHash('sha256').update(token).digest('hex')
-    // const user = await userRepo.getTokenResetPass({resetPasswordToken: hashToken, resetPasswordExpires: {$gt: Date.now()}})
-    //   if (!user) {
-    //     return res.status(400).send('Not find user')
-    //   }
-    //   const salt = await bcrypt.genSalt(10);
-    //   const hashPass = await bcrypt.hash(newPassword, salt)  
-
-    //   user.password = hashPass;
-    //   user.resetPasswordToken = undefined;
-    //   user.resetPasswordExpires = undefined;
-      
-    //   await user.save()
     const result = await AuthService.resetPass(newPassword, token)
       return res.status(200).json({
         success: true,
@@ -124,6 +104,33 @@ class AuthController {
     })
    }
   }
+  async uploadProfileImages(req, res) {
+    try {
+      const { name, folderPath } = req.body;
+
+      if (!name || !folderPath) {
+        return res.status(400).json({
+          success: false,
+          message: "Thiếu username hoặc folderPath",
+        });
+      }
+
+      const result = await AuthService.uploadImages(name, folderPath);
+
+      return res.status(200).json({
+        success: result.success,
+        message: result.message,
+        images: result.images,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi khi upload ảnh: ' + error.message,
+      });
+    }
+  }
+  
 }
 
 export default new AuthController();
