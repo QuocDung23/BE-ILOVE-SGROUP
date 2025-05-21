@@ -1,28 +1,26 @@
-import { UserRepository } from "../../repositories/users.repository.js";
 import AuthService from "./auth.service.js";
-import { createResetPassToken } from "../../service/resetToken.js";
-import { mailService } from "../../service/mail.service.js";
-import crypto from "crypto";
-import bcrypt from 'bcryptjs';
-
-
-const userRepo = new UserRepository();
+import mongoose from 'mongoose';
 
 class AuthController {
   async register(req, res) {
     try {
-      const { name, password, email } = req.body;
+      const { name, password, email, role } = req.body;
       if (!name || !password || !email) {
         return res
           .status(400)
           .json({ message: "Thiếu tên, mail hoặc mật khẩu" });
       }
 
-      const user = await AuthService.register(name, password, email);
+      const user = await AuthService.register(name, password, email, role);
       return res.status(201).json({
         success: true,
         message: "Đăng kí thành công",
-        data: user,
+        data: {
+          name: user.username,
+          email: user.email,
+          role: user.role,
+          creator: user._id
+        }
       });
     } catch (err) {
       console.log(err);
@@ -60,6 +58,10 @@ class AuthController {
       return res.status(200).json({
         success: true,
         message: "Đăng nhập thành công",
+        data: {
+          token,
+          creator: user._id
+        }
       });
     } catch (error) {
       console.log(error);
@@ -107,7 +109,6 @@ class AuthController {
   async uploadProfileImages(req, res) {
     try {
       const { name, folderPath } = req.body;
-
       if (!name || !folderPath) {
         return res.status(400).json({
           success: false,
@@ -131,6 +132,57 @@ class AuthController {
     }
   }
   
+  async getAllUsers(req, res) {
+    try {
+      await AuthService.restrictTo('admin')(req.user);
+      const users = await AuthService.getAllUsers();
+      res.status(200).json(users);
+    } catch (error) {
+      res.status(401).json({
+        message: error.message,
+      });
+    }
+  }
+
+  async getUserDetail(req, res) {
+    try {
+      const { username } = req.params;
+      await AuthService.restrictTo('admin')(req.user)
+      const userDetail = await AuthService.getUserDetail(username)
+      res.status(200).json({
+        ...userDetail,
+        creator: userDetail._id
+      })
+    } catch(error) {
+      res.status(400).json({
+        message: error.message
+      })
+    }
+  }
+
+  async updateUser(req, res) {
+    try {
+      const { username } = req.params
+      const updateData = req.body
+
+      if(!req.user.role === 'member' && req.user.name !== username) {
+        throw new Error('Bạn không thể thay đổi thông tin của người này!')
+      }
+
+      const updateUser = await AuthService.updateUser(username, updateData)
+      res.status(200).json({
+        message: 'Cập nhật thành công',
+        data: {
+          ...updateUser,
+          creator: updateUser._id
+        }
+      })
+    } catch(error) {
+      res.status(400).json({
+        message: error.message
+      })
+    }
+  }
 }
 
 export default new AuthController();

@@ -2,7 +2,7 @@ import UserModel from '../models/users.model.js';
 
 export class UserRepository {
   async create(dto) {
-    const { name, email, password } = dto;
+    const { name, email, password, role} = dto;
 
     if (!name || !email || !password) {
       console.log(name,  email, password);
@@ -12,16 +12,18 @@ export class UserRepository {
       name,
       email,
       password,
+      role
     });
 
     return {
       name,
       email,
-      id: String(result._id),
+      _id: String(result._id),
+      role
     };
   }
 
-  async getOneById(id) {
+  async findById(id) {
     const user = await UserModel.findOne({
       _id: id,
     });
@@ -31,16 +33,27 @@ export class UserRepository {
     }
 
     return {
-      id: String(user._id),
+      _id: String(user._id),
       name: String(user.name),
       email: String(user.email),
     };
   }
 
-  async findByUsername(username) {
+  async findByUsername(name) {
     try {
-      const user = await UserModel.findOne({name: username }); // Sử dụng findOne thay vì find
-      return user; // Trả về người dùng tìm được
+      if (!name) {
+        throw new Error('Vui lòng cung cấp tên người dùng!');
+    }
+    const user = await UserModel.findOne({ name }).lean();
+    if (!user) {
+        console.log(`Không tìm thấy người dùng với tên: ${name}`);
+        return null;
+    }
+    if (!user._id) {
+        console.error('Người dùng không có _id:', user);
+        throw new Error('Dữ liệu người dùng không hợp lệ: Thiếu _id');
+    }
+    return user;
     } catch (err) {
       console.error('Error finding user by username:', err);
       throw new Error('Error finding user');
@@ -82,9 +95,11 @@ export class UserRepository {
     if (!users) throw new Error('Not found user');
     
     return users.map(user => ({
-      id: user._id.toString(),
+      _id: user._id.toString(),
       name: user.name,
-      email: user.email
+      email: user.email,
+      role: user.role,
+      linkImage: user.linkImages
     }));
   }
 
@@ -93,7 +108,7 @@ export class UserRepository {
     if (!deletedUser) throw new Error('not found');
     
     return {
-      id: String(deletedUser._id),
+      _id: String(deletedUser._id),
       name: deletedUser.name,
       email: deletedUser.email,
     };

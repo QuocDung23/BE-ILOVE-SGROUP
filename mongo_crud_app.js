@@ -13,7 +13,7 @@ const movieSchema = new mongoose.Schema({
 });
 
 // Create a model from the schema
-const movieCollection = mongoose.model('Movie', movieSchema);
+const accountCollection = mongoose.model('Movie', movieSchema);
 
 const app = express();
 app.use(express.json());
@@ -22,7 +22,7 @@ app.use(express.json());
 app.post('/movies', async (req, res) => {
   const { title, genre, rating } = req.body;
   try {
-    const result = await movieCollection.insertOne({ title, genre, rating });
+    const result = await accountCollection.insertOne({ title, genre, rating });
     res.status(201).send(result.ops[0]);
   } catch (err) {
     res.status(400).send('Error: ' + err.message);
@@ -52,7 +52,7 @@ app.put('/movies/:id', async (req, res) => {
   const { title, genre, rating } = req.body;
 
   try {
-    const result = await movieCollection.updateOne( //db.movie
+    const result = await accountCollection.updateOne( //db.movie
       { _id: new MongoClient.ObjectID(id) }, 
       { $set: { title, genre, rating } }
     );
