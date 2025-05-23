@@ -5,9 +5,9 @@ import mongoose from 'mongoose';
 export class TaskRepository  {
     async createTask(dto) {
         try {
-            const { title, description, documentLink, githubRepo, creator, dueTime, createdAt } = dto;
+            const { title, description, documentLink, githubRepo, creator: creatorId, dueTime } = dto;
 
-        const userExists = await UserModel.findById(creator).lean();
+        const userExists = await UserModel.findById(creatorId).lean();
         if (!userExists) {
             throw new Error('Người dùng không tồn tại');
         }
@@ -19,7 +19,7 @@ export class TaskRepository  {
             dueTime: new Date(dueTime),
             documentLink,
             githubRepo,
-            creator, // Lưu reference tới UserModel
+            creator: creatorId, // Lưu reference tới UserModel
         });
 
         // Lấy task với thông tin creator đã populate
@@ -65,31 +65,61 @@ export class TaskRepository  {
 
     async getAllTask(){
         try{
+            const task = await TaskModel.find().populate('creator', '_id name').lean();
 
-        } catch {
-            
+            return task.map(task => ({
+                _id: task._id,
+                title: task.title,
+                description: task.description,
+                dueTime: task.dueTime,
+                documentLink: task.documentLink,
+                githubRepo: task.githubRepo,
+                creator: {
+                    _id: task.creator._id,
+                    username: task.creator.name
+                }
+            }))
+        } catch(error) {
+            throw new Error(`Lỗi lấy danh sách: ${error.message}`)
         }
     }
 
     async getTaskById(id) {
-        const task = await TaskModel.findOne({
-            _id: id
-        })
-        if(!task) {
-            throw new Error('Không có task này')
+        try{
+            const task = await TaskModel.findOne({
+                _id: id
+            }).populate('creator', '_id name')
+            if(!task) {
+                throw new Error('Không có task này')
+            }
+            return {
+                _id: task._id,
+                title: task.title,
+                dueTime: task.dueTime,
+                description: task.description,
+                documentLink: task.documentLink,
+                githubRepo: task.githubRepo,
+                creator: {
+                    _id: task.creator._id,
+                    username: task.creator.name || 'unknown',
+                },
+                createdAt: task.createdAt   
+            }
+        } catch(error) {
+            throw new Error(`Lỗi lấy danh sách bằng Id: ${error.message}`)
         }
-        return {
-            _id: task._id,
-            title: task.title,
-            dueTime: task.dueTime,
-            description: task.description,
-            documentLink: task.documentLink,
-            githubRepo: task.githubRepo,
-            creator: {
-                _id: task.creator._id,
-                username: task.creator.name || 'unknown',
-            },
-            createdAt: task.createdAt   
+    }
+
+    async UpdateTask(id, update) {
+        try {
+            const updateTask = await TaskModel.findOneAndUpdate(
+                {_id: id},
+                update,
+                {new: true}
+            )
+            return updateTask
+        } catch(error) {
+            throw new Error(`Error Update Task: ${error.message}`)
         }
     }
 }
