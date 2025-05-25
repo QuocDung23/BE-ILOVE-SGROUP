@@ -18,7 +18,7 @@ const authenticateToken = async (req, res, next) => {
         console.log('req.user:', req.user);
         next();
     } catch (error) {
-        return res.status(401).json({ message: error.message || 'token không hợp lệ' });
+        return res.status(401).json({ message: error.message || 'Role không có quyền này!' });
     }
 };
 

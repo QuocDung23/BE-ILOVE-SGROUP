@@ -94,6 +94,47 @@ class TaskController {
             })
         }
     }
+
+    async deleteTask(req, res) {
+        try {
+            const { id } = req.params
+            const user = req.user
+
+
+            const task = await TaskService.deleteTask(id, user)
+            return res.status(200).json({
+                success: true,
+                message: 'Xóa thành công!',
+                data: task
+            })
+        } catch(error) {    
+            console.error(error);
+            return res.status(400).json({
+                success: false,
+                message: `${error.message}`
+            })
+        }
+    }
+
+    async createSub(req, res) {
+        try {
+            const { taskId } = req.params
+            const { name } = req.body
+
+            if(req.user.role !== 'admin') {
+                return res.status(400).json({message: 'Bạn không có quyền này!'})
+            }
+
+            const subBoard = await TaskService.createSub(taskId, name)
+            return res.status(200).json({
+                success: true,
+                message: 'Tạo thành công.',
+                data: subBoard
+            })
+        } catch(error) {
+            return res.status(500).json({ message: error.message });
+        }
+    }
 }
 
 export default new TaskController();

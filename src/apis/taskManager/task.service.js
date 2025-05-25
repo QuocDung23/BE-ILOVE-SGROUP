@@ -1,6 +1,6 @@
 import { TaskRepository } from '../../repositories/task.repository.js';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import mongoose, { get } from 'mongoose';
 
 
 
@@ -56,6 +56,25 @@ class TaskService {
         documentLink: updateData.documentLink,
         githubRepo: updateData.githubRepo
       }
+    }
+
+    async deleteTask(id, user) {
+      if(user.role !== 'admin'){
+        throw new Error('Bạn không có quyền xóa task')
+      }
+
+      const deleteTask = await taskRepo.deleteTask(id)
+      if(!deleteTask){
+        throw new Error('Xóa không thành công')
+      }
+      return deleteTask
+    }
+
+    async createSub(taskId, name) {
+      if(!name) {
+        throw new Error('Vui lòng điền thông tin')
+      }
+      return await taskRepo.createSub(taskId, name)
     }
     restrictTo(...roles) {
         return async (user) => {

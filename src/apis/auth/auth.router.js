@@ -8,7 +8,7 @@ authRoute.post('/login', AuthController.login);
 authRoute.post('/register', AuthController.register)
 authRoute.post('/forgotPass', AuthController.forgotPass)
 authRoute.patch('/resetPass/:token', AuthController.resetPass)
-authRoute.post("/uploadImage", AuthController.uploadProfileImages);
+authRoute.post("/uploadImage/", AuthController.uploadProfileImages);
 authRoute.get("/user",authenticateToken, AuthController.getAllUsers)
 authRoute.get("/user/:username", authenticateToken, AuthController.getUserDetail)
 authRoute.patch("/updateUser/:username", authenticateToken, AuthController.updateUser)
