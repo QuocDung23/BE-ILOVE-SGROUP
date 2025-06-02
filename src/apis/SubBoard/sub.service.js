@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 import path from 'path';
+import { get } from "http";
 
 const subRepo = new SubRepository();
 
@@ -13,6 +14,9 @@ class subService {
 
   async getSubId(id) {
     const getSub = await subRepo.getSubId({ _id: id });
+    if(!getSub) {
+      throw new Error('Không có SubBroard này!')
+    }
     return getSub;
   }
   async updateSub(id, update) {

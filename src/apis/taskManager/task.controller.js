@@ -4,14 +4,14 @@ import TaskService from './task.service.js'
 class TaskController {
     async createTask(req, res) {
         try {
-            console.log('req.user:', req.user);
+            console.log('check req.user:', req.user);
     
             if (!req.user || !req.user._id) {
                 throw new Error('Không tìm thấy thông tin user từ token');
             }
     
             await TaskService.restrictTo('admin')(req.user);
-            const { title, description, documentLink, githubRepo, dueTime, createdAt} = req.body;
+            const { title, description, documentLink, githubRepo, team, dueTime, createdAt} = req.body;
             if (!title || !description || !documentLink || !githubRepo) {
                 return res.status(400).json({
                     message: 'Điền thiếu thông tin. Vui lòng nhập đủ thông tin!',
@@ -28,6 +28,7 @@ class TaskController {
                     _id: req.user._id,
                     name: req.user.name
                 },
+                team,
                 createdAt
             };
     
@@ -48,8 +49,8 @@ class TaskController {
 
     async getAllTask(req, res) {
         try {
-            const { title, description, documentLink, githubRepo, dueTime, createdAt} = req.body;
-            const getTask = await TaskService.getAllTask({ title, description, documentLink, githubRepo, dueTime, createdAt})
+            const { title, description, documentLink, githubRepo, team, dueTime, createdAt} = req.body;
+            const getTask = await TaskService.getAllTask({ title, description, documentLink, githubRepo, team, dueTime, createdAt})
             return res.status(200).json({
                 data: getTask
             })
@@ -135,6 +136,42 @@ class TaskController {
             return res.status(500).json({ message: error.message });
         }
     }
-}
 
+    async createComment(req, res) {
+        try {   
+            const {content}  = req.body
+            const {taskId}  = req.params
+            const userId  = req.user._id
+            console.log('req.user:', req.user._id);
+            console.log('id of taks', taskId);
+            console.log('content:', content);
+            
+            const createComment = await TaskService.createComment(content, taskId, userId)
+            console.log("check create", createComment);
+            
+            return res.status(200).json({
+                success: true,
+                message: 'Comment thành công',
+                data: createComment
+            })
+        } catch(error){
+            return res.status(400).json({ message: error.message });
+        }
+    }
+
+    async getComment(req, res) {
+        try {
+            const { taskId } = req.params
+            console.log('id:', taskId);
+            
+            const getComment = await TaskService.getComment(taskId)
+            return res.status(200).json({
+                data: getComment
+            })
+        } catch(error) {
+            return res.status(400).json({message: error.message})
+        }
+    }
+}
+    
 export default new TaskController();

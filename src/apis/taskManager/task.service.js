@@ -1,10 +1,13 @@
 import { TaskRepository } from '../../repositories/task.repository.js';
+import { UserRepository } from '../../repositories/users.repository.js';
 import dotenv from 'dotenv';
 import mongoose, { get } from 'mongoose';
 
 
 
 const taskRepo = new TaskRepository();
+const userRepo = new UserRepository();
+
 
 class TaskService {
     constructor() {
@@ -76,6 +79,24 @@ class TaskService {
       }
       return await taskRepo.createSub(taskId, name)
     }
+
+    async createComment(content, taskId, userId, ) {
+      const comment = await taskRepo.createComment(
+        content,
+        taskId,
+        userId,
+      );
+      return comment;
+    }
+    
+    async getComment(taskId) {
+      const getComment = await taskRepo.getComment(taskId)
+      if (!getComment) {
+        throw new Error('Không tìm thấy comment này!')
+      }
+      return getComment
+    }
+    
     restrictTo(...roles) {
         return async (user) => {
           if (!roles.includes(user.role)) {

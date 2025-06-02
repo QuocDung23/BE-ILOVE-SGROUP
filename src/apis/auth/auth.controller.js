@@ -134,7 +134,7 @@ class AuthController {
   
   async getAllUsers(req, res) {
     try {
-      await AuthService.restrictTo('admin')(req.user);
+      await AuthService.restrictTo('admin','member')(req.user);
       const users = await AuthService.getAllUsers();
       res.status(200).json(users);
     } catch (error) {
@@ -147,7 +147,7 @@ class AuthController {
   async getUserDetail(req, res) {
     try {
       const { username } = req.params;
-      await AuthService.restrictTo('admin')(req.user)
+      await AuthService.restrictTo('admin', 'member')(req.user)
       const userDetail = await AuthService.getUserDetail(username)
       res.status(200).json({
         ...userDetail,
@@ -164,9 +164,15 @@ class AuthController {
     try {
       const { username } = req.params
       const updateData = req.body
+      const currentUser = req.user;
 
-      if(!req.user.role === 'member' && req.user.name !== username) {
-        throw new Error('Bạn không thể thay đổi thông tin của người này!')
+      const isAdmin = currentUser.role === 'admin';
+      const isSelf = currentUser.name === username;
+
+      if (!isAdmin && !isSelf) {
+        return res.status(403).json({
+          message: 'Bạn không có quyền cập nhật thông tin người dùng này!',
+        });
       }
 
       const updateUser = await AuthService.updateUser(username, updateData)

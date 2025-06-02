@@ -1,7 +1,9 @@
 import TaskModel from "../models/task.model.js";
 import UserModel from "../models/users.model.js";
 import SubModel from "../models/subBoards.model.js";
-import mongoose from "mongoose";
+import CommentModel from "../models/comment.model.js";
+import TeamModel from "../models/team.model.js";
+import mongoose, { get } from "mongoose";
 
 export class TaskRepository {
   async createTask(dto) {
@@ -12,12 +14,18 @@ export class TaskRepository {
         documentLink,
         githubRepo,
         creator: creatorId,
+        team: teamId,
         dueTime,
       } = dto;
 
-      const userExists = await UserModel.findById(creatorId).lean();
-      if (!userExists) {
+      const checkUser = await UserModel.findById(creatorId).lean();
+      if (!checkUser) {
         throw new Error("Người dùng không tồn tại");
+      }
+
+      const checkTeam = await TeamModel.findById(teamId).lean();
+      if (!checkTeam) {
+        throw new Error(`Team không tồn tại với ID: ${teamId}`);
       }
 
       // Tạo task
@@ -27,12 +35,14 @@ export class TaskRepository {
         dueTime: new Date(dueTime),
         documentLink,
         githubRepo,
-        creator: creatorId, // Lưu reference tới UserModel
+        creator: creatorId,
+        team: teamId,
       });
 
       // Lấy task với thông tin creator đã populate
       const task = await TaskModel.findById(result._id)
         .populate("creator", "_id name")
+        .populate("team", "_id nameTeam")
         .lean();
 
       return {
@@ -46,10 +56,14 @@ export class TaskRepository {
           _id: task.creator._id,
           username: task.creator.name || "unknown",
         },
+        team: {
+          _id: task.team._id,
+          nameTeam: task.team.nameTeam,
+        },
         createdAt: task.createdAt,
       };
     } catch (error) {
-      console.error("Không thể tạo task", error);
+      console.error("Không thể tạo task", error.message);
       throw new Error("Không thể tạo được task");
     }
   }
@@ -77,6 +91,15 @@ export class TaskRepository {
     try {
       const task = await TaskModel.find()
         .populate("creator", "_id name")
+        .populate("subBoards")
+        .populate({
+          path: "comments",
+          populate: {
+            path: "userId",
+            select: "_id name",
+          },
+        })
+        .populate("team", "_id nameTeam")
         .lean();
 
       return task.map((task) => ({
@@ -86,10 +109,13 @@ export class TaskRepository {
         dueTime: task.dueTime,
         documentLink: task.documentLink,
         githubRepo: task.githubRepo,
+        subBoards: task.subBoards,
+        comments: task.comments,
         creator: {
           _id: task.creator._id,
           username: task.creator.name,
         },
+        team: task.team,
       }));
     } catch (error) {
       throw new Error(`Lỗi lấy danh sách: ${error.message}`);
@@ -101,6 +127,14 @@ export class TaskRepository {
       const task = await TaskModel.findById(id)
         .populate("creator", "_id name")
         .populate("subBoards")
+        .populate({
+          path: "comments",
+          populate: {
+            path: "userId",
+            select: "_id name",
+          },
+        })
+        .populate("team", "_id nameTeam")
         .lean();
 
       if (!task) {
@@ -114,10 +148,12 @@ export class TaskRepository {
         documentLink: task.documentLink,
         githubRepo: task.githubRepo,
         subBoards: task.subBoards,
+        comments: task.comments,
         creator: {
           _id: task.creator._id,
           username: task.creator.name || "unknown",
         },
+        team: task.team,
         createdAt: task.createdAt,
       };
     } catch (error) {
@@ -164,5 +200,49 @@ export class TaskRepository {
       name: createdSub.name,
       taskId: createdSub.taskId,
     };
+  }
+
+  async createComment(content, taskId, userId) {
+    try {
+      const task = await TaskModel.findById(taskId);
+      if (!task) {
+        throw new Error("Task không tồn tại");
+      }
+
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        throw new Error("Người tạo không tồn tại");
+      }
+
+      const createComment = await CommentModel.create({
+        content,
+        userId,
+        taskId,
+      });
+      task.comments.push(createComment._id);
+      await task.save();
+      return {
+        _id: createComment._id,
+        userId: {
+          _id: user._id,
+          name: user.name,
+        },
+        content: createComment.content,
+      };
+    } catch (error) {
+      throw new Error(`Không thể tạo comment: ${error.message}`);
+    }
+  }
+
+  async getComment(taskId) {
+    try {
+      const getComment = await CommentModel.find({ taskId }).populate(
+        "userId",
+        "name _id"
+      );
+      return getComment;
+    } catch (error) {
+      throw new Error(`Lỗi Lấy Comment ${error.message}`);
+    }
   }
 }

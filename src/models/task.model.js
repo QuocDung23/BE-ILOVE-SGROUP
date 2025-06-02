@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+const { ObjectId } = mongoose.Schema.Types;
+
 
 const taskSchema = new mongoose.Schema({
     title: { type: String, required: true },
@@ -6,9 +8,10 @@ const taskSchema = new mongoose.Schema({
     dueTime: {type: Date, required: true},
     documentLink: { type: String},
     githubRepo: { type: String},
-    creator: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true},
-    subBoards: [{ type: mongoose.Schema.Types.ObjectId, ref: 'subBoard'}],
-    // comments: [{ type: ObjectId, ref: 'Comment'}],
+    creator: {type: ObjectId, ref: 'User', required: true},
+    subBoards: [{ type: ObjectId, ref: 'subBoard'}],
+    comments: [{ type: ObjectId, ref: 'Comment'}],
+    team: {type: ObjectId, ref: 'Team'}
 },
     { timestamps: true }
 )

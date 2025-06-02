@@ -9,5 +9,7 @@ taskRoute.get('/getAll', TaskController.getAllTask)
 taskRoute.get('/getTask/:id', TaskController.getTaskId)
 taskRoute.patch('/updateTask/:id', authenticateToken, TaskController.updateTask)
 taskRoute.delete('/deleteTask/:id', authenticateToken, TaskController.deleteTask)
-taskRoute.post('/:taskId/subbroad', authenticateToken, TaskController.createSub)
+taskRoute.post('/:taskId/subboard', authenticateToken, TaskController.createSub)
+taskRoute.post('/:taskId/comment',authenticateToken, TaskController.createComment)
+taskRoute.get('/:taskId/comment', TaskController.getComment)
 export default taskRoute;
